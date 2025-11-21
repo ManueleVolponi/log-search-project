@@ -1,0 +1,2 @@
+faker=38.0.0
+dotenv
