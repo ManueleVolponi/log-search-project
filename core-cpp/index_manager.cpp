@@ -270,3 +270,98 @@ std::string IndexManager::jsonEscape(const std::string &str)
     }
     return escaped_str;
 }
+
+void IndexManager::save_index(
+    const std::string& index_output_path,
+    const InvertedIndex& index,
+    const std::vector<std::string>& log_lines
+) 
+{
+    std::ofstream outfile(index_output_path, std::ios::binary);
+
+    if (!outfile.is_open()) {
+        std::cerr << "ERROR: Cannot open output file for saving index: " << index_output_path << std::endl;
+        return;
+    }
+
+    size_t line_count = log_lines.size();
+    outfile.write(reinterpret_cast<const char*>(&line_count), sizeof(line_count));
+
+    for (const auto& line : log_lines) {
+        size_t size = line.size();
+        outfile.write(reinterpret_cast<const char*>(&size), sizeof(size));
+        outfile.write(line.data(), size);
+    }
+    
+    size_t index_size = index.size();
+    outfile.write(reinterpret_cast<const char*>(&index_size), sizeof(index_size));
+
+    for (const auto& pair : index) {
+        const std::string& key = pair.first;
+        size_t key_size = key.size();
+        outfile.write(reinterpret_cast<const char*>(&key_size), sizeof(key_size));
+        outfile.write(key.data(), key_size);
+
+        const std::vector<int>& ids = pair.second;
+        size_t ids_count = ids.size();
+        outfile.write(reinterpret_cast<const char*>(&ids_count), sizeof(ids_count));
+        
+        if (ids_count > 0) {
+            outfile.write(reinterpret_cast<const char*>(ids.data()), ids_count * sizeof(int));
+        }
+    }
+
+    outfile.close();
+}
+
+std::pair<InvertedIndex, std::vector<std::string>> IndexManager::load_index(const std::string& index_input_path) 
+{
+    InvertedIndex index;
+    std::vector<std::string> log_lines;
+    
+    std::ifstream infile(index_input_path, std::ios::binary);
+
+    if (!infile.is_open()) {
+        std::cerr << "ERROR: Cannot open input file for loading index: " << index_input_path << std::endl;
+        return {index, log_lines}; 
+    }
+
+    size_t line_count = 0;
+    infile.read(reinterpret_cast<char*>(&line_count), sizeof(line_count));
+
+    log_lines.reserve(line_count);
+    for (size_t i = 0; i < line_count; ++i) {
+        size_t size = 0;
+        infile.read(reinterpret_cast<char*>(&size), sizeof(size));
+        
+        std::string line(size, '\0');
+        infile.read(&line[0], size);
+        log_lines.push_back(std::move(line));
+    }
+
+    size_t index_size = 0;
+    infile.read(reinterpret_cast<char*>(&index_size), sizeof(index_size));
+
+    for (size_t i = 0; i < index_size; ++i) {
+        size_t key_size = 0;
+        infile.read(reinterpret_cast<char*>(&key_size), sizeof(key_size));
+        
+        std::string key(key_size, '\0');
+        infile.read(&key[0], key_size);
+
+        size_t ids_count = 0;
+        infile.read(reinterpret_cast<char*>(&ids_count), sizeof(ids_count));
+        
+        std::vector<int> ids(ids_count);
+
+        if (ids_count > 0) {
+            infile.read(reinterpret_cast<char*>(ids.data()), ids_count * sizeof(int));
+        }
+        
+        index.emplace(std::move(key), std::move(ids));
+    }
+
+    infile.close();
+    
+    return {index, log_lines};
+}

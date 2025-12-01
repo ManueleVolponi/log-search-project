@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <map>
 
 using InvertedIndex = std::unordered_map<std::string, std::vector<int>>;
 
@@ -19,6 +20,12 @@ private:
     std::pair<InvertedIndex, std::vector<std::string>> create_index(const std::string& filename);
     std::vector<int> search_index(const InvertedIndex& index, const std::string& query);
     std::string jsonEscape(const std::string& str);
+    void save_index(
+        const std::string& index_output_path,
+        const InvertedIndex& index,
+        const std::vector<std::string>& log_lines
+    );
+    std::pair<InvertedIndex, std::vector<std::string>> load_index(const std::string& index_input_path);
 };
 
 #endif

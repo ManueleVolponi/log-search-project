@@ -1,1 +1,19 @@
-from cpp:latest
+FROM gcc:11 as builder
+
+WORKDIR /core
+
+COPY core-cpp/CMakeLists.txt .
+COPY core-cpp/index_manager.hpp core-cpp/index_manager.cpp core-cpp/indexer.cpp core-cpp/searcher.cpp ./core-cpp/
+
+RUN mkdir build && cd build && cmake .. && make
+
+FROM debian:stable-slim
+
+WORKDIR /core
+
+COPY --from=builder /core/build/indexer /usr/local/bin/indexer
+COPY --from=builder /core/build/searcher /usr/local/bin/searcher
+
+COPY core-cpp/access.log /core/access.log
+
+ENTRYPOINT ["/usr/local/bin/searcher"]
