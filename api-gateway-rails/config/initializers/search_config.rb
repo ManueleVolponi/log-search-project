@@ -5,7 +5,7 @@ RAILS_ROOT_PATH = Rails.root.to_s
 PROJECT_ROOT_PATH = Pathname.new(RAILS_ROOT_PATH).parent.to_s
 
 
-CPP_EXECUTABLE_PATH = File.join(PROJECT_ROOT_PATH, "core-cpp", "build", "log_search")
+CPP_EXECUTABLE_PATH = File.join(PROJECT_ROOT_PATH, "core-cpp", "build", "searcher")
 LOG_FILE_PATH = File.join(PROJECT_ROOT_PATH, "access.log")
 
 unless File.exist?(CPP_EXECUTABLE_PATH)
